@@ -1,0 +1,98 @@
+#!/bin/bash
+
+apk update
+
+apk upgrade
+
+cat <<EOF > docker-compose.yml
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb
+    container_name: mariadb_container
+    environment:
+      MARIADB_ROOT_PASSWORD: rootpassword
+      MARIADB_DATABASE: mydatabase
+      MARIADB_USER: myuser
+      MARIADB_PASSWORD: mypassword
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin_container
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    ports:
+      - "8080:80"
+    depends_on:
+      - mariadb
+
+  ngrok:
+    image: ngrok/ngrok
+    container_name: ngrok_container
+    ports:
+      - "4040:4040"
+
+volumes:
+  mariadb_data:
+EOF
+
+echo
+
+# Esse while True serve para só progredir quando o usuário colocar o login dele corretamente, caso contrário, o script inteiro não irá rodar pela falta de dependências necessárias
+
+# $? armazena o código de saída do último comando executado
+# 0 indica que o comando foi bem-sucedido
+# Qualquer valor diferente de 0 indica que houve um erro
+# A comparação [-eq] verifica se $? "é igual a" 0
+# Se for igual a 0, significa que o último comando executou com sucesso
+
+while true; do
+    docker login
+    if [ $? -eq 0 ]; then
+        break
+    else
+        echo
+    fi
+done
+
+echo
+
+docker-compose up -d
+
+echo
+
+pip install mysql-connector-python tqdm
+
+echo
+
+cat <<EOF > progress_bar.py
+import time
+from tqdm import tqdm
+
+total_time = 20
+interval = 0.1
+
+for _ in tqdm(range(int(total_time / interval)), desc="Iniciando o servidor MySQL", bar_format="{l_bar}{bar}"):
+    time.sleep(interval)
+EOF
+
+python progress_bar.py
+
+echo
+
+echo "O servidor MySQL foi iniciado!"
+
+echo
+
+# Retirar o meu token de autenticação do NGROK
+read -s -p "Coloque o seu authtoken Ngrok: " token
+
+docker run --net=host -it -e NGROK_AUTHTOKEN=$token ngrok/ngrok:latest tcp 3306
