@@ -28,7 +28,7 @@
 Copie os comando abaixo no Terminal do `Play with Docker`
 
 ```bash
-git clone https://github.com/marshfellow42/public_mysql_server
+git clone https://github.com/marshfellow42/public_mysql_server.git
 
 cd public_mysql_server
 
