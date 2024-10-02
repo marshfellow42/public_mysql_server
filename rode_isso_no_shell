@@ -69,7 +69,7 @@ docker-compose up -d
 
 echo
 
-pip install mysql-connector-python tqdm
+pip install tqdm
 
 echo
 
